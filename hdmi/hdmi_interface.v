@@ -24,7 +24,6 @@ module hdmi_interface
 #(parameter COLOUR_SCALING = "NONE")
 
  (input clk,
-  input reset,
   input [7:0] channel0_pixel,
   input [7:0] channel1_pixel,
   input [7:0] channel2_pixel,
@@ -72,7 +71,6 @@ module hdmi_interface
 
   hdmi_sequencer #(.VIDEO_MODE("720p_reduced")) vtimer (
     .clk(clk),
-    .rst(reset),
     .aux_request(aux_request),
     .aux_enable(ae),
     .display_enable(de),

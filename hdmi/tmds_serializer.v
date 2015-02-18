@@ -101,37 +101,14 @@ endmodule
 //and the other carrying the odd bits syncronized to the clkx5
 //negative edges. To be used with a regular ddr buffer.
 module tmds_ddr_serializer (
-  input          clk,         // pixel clock input
-  input          clkx5p,      // bit clock input
+//  input          clk,         // bit clock input
+  input          clkx5,      // bit clock input
   input          clkx5n,      // bit clock input inverted
   input [9:0]    chan0_token,
   input [9:0]    chan1_token,
   input [9:0]    chan2_token,
-  input          rst,         // reset
   output [2:0]   tmds_ddr_p,
   output [2:0]   tmds_ddr_n);
-
-//Because the pixel clock and bit clock have odd ratio
-//we know that the edge directon of clkx5 is always the same as
-//the corresponding one of clk. This is used here to give 
-//some more time for rst_n to register the reset change. 
-//The original rst signal is sampled in on the posedge of clk to help
-//the rst_p and rst_n get set in the correct order.
-  reg  local_rst;
-  reg  rst_p = 0;
-  reg  rst_n = 0;
-  wire load_flag_p;
-  wire load_flag_n;
-
-  always @(posedge clk)
-  begin
-    local_rst <= rst;
-    rst_p <= local_rst;
-  end
-
-  always @(negedge clk)
-    rst_n <= local_rst;
-
 
 //Separate the input bits to evens and odds
   wire [4:0] chan0_even;
@@ -155,17 +132,30 @@ module tmds_ddr_serializer (
 //load in new data. The p_in values here can be adjusted to change the load timings.
 //The default values make both loads happen on the third clkx5 edge, positive and negative
 //respectively.
-  ring_buffer load_counter_p (.clk(clkx5p), .clear(1'b0), .load(rst_p), .p_in(5'b00100), .s_out(load_flag_p));
-  ring_buffer load_counter_n (.clk(clkx5n), .clear(1'b0), .load(rst_n), .p_in(5'b00001), .s_out(load_flag_n));
+  wire load_flag_p;
+  wire load_flag_n;
+  reg [4:0] load_counter_p = 5'b01000;
+  reg [4:0] load_counter_n = 5'b01000;
+
+  always @(posedge clkx5)
+    load_counter_p <= {load_counter_p[0], load_counter_p[4:1]};
+  always @(posedge clkx5n)
+    load_counter_n <= {load_counter_n[0], load_counter_n[4:1]};
+
+  assign load_flag_p = load_counter_p[0];
+  assign load_flag_n = load_counter_n[0];
+
+//  ring_buffer load_counter_p (.clk(clkx5p), .clear(1'b0), .load(rst_p), .p_in(5'b00100), .s_out(load_flag_p));
+//  ring_buffer load_counter_n (.clk(clkx5n), .clear(1'b0), .load(rst_n), .p_in(5'b00001), .s_out(load_flag_n));
 
 
 //The serializer lines
-  ring_buffer ser0p (.clk(clkx5p), .clear(rst_p), .load(load_flag_p), .p_in(chan0_even), .s_out(tmds_ddr_p[0]));
+  ring_buffer ser0p (.clk(clkx5), .clear(rst_p), .load(load_flag_p), .p_in(chan0_even), .s_out(tmds_ddr_p[0]));
   ring_buffer ser0n (.clk(clkx5n), .clear(rst_n), .load(load_flag_n), .p_in(chan0_odd), .s_out(tmds_ddr_n[0]));
 
-  ring_buffer ser1p (.clk(clkx5p), .clear(rst_p), .load(load_flag_p), .p_in(chan1_even), .s_out(tmds_ddr_p[1]));
+  ring_buffer ser1p (.clk(clkx5), .clear(rst_p), .load(load_flag_p), .p_in(chan1_even), .s_out(tmds_ddr_p[1]));
   ring_buffer ser1n (.clk(clkx5n), .clear(rst_n), .load(load_flag_n), .p_in(chan1_odd), .s_out(tmds_ddr_n[1]));
 
-  ring_buffer ser2p (.clk(clkx5p), .clear(rst_p), .load(load_flag_p), .p_in(chan2_even), .s_out(tmds_ddr_p[2]));
+  ring_buffer ser2p (.clk(clkx5), .clear(rst_p), .load(load_flag_p), .p_in(chan2_even), .s_out(tmds_ddr_p[2]));
   ring_buffer ser2n (.clk(clkx5n), .clear(rst_n), .load(load_flag_n), .p_in(chan2_odd), .s_out(tmds_ddr_n[2]));
 endmodule

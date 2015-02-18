@@ -33,22 +33,20 @@ module hdmi_sequencer
   parameter CUSTOM_V_SYNC          = 0,
   parameter CUSTOM_V_BACK_PORCH    = 0,
   parameter CUSTOM_V_SYNC_POLARITY = 0)
-
  (input  clk,
-  input  rst,
   input  aux_request,
-  output reg aux_enable = 0,
-  output reg display_enable = 0,
-  output reg line_end = 0,
-  output reg frame_end = 0,
-  output reg aux_packet_end = 0,
-  output reg hsync = 0,
-  output reg vsync = 0,
-  output reg [11:0] pixel,
-  output reg [11:0] line,
-  output reg [9:0] aux_slot,
-  output reg [2:0] opmode); //Modes: 111-Video preamble, 110-Video guard, 101-Aux preamble, 100-Aux guard, 
-                            //       011-Video data,     001-Aux data,    000-Control,      010-Unused
+  output reg aux_enable = 1'b0,
+  output reg display_enable = 1'b1,
+  output reg line_end = 1'b1,
+  output reg frame_end = 1'b1,
+  output reg aux_packet_end = 1'b0,
+  output reg hsync = 1'b0,
+  output reg vsync = 1'b0,
+  output reg [11:0] pixel = 12'd0,
+  output reg [11:0] line = 12'd0,
+  output reg [9:0] aux_slot = 10'd0,
+  output reg [2:0] opmode = 3'b011); //Modes: 111-Video preamble, 110-Video guard, 101-Aux preamble, 100-Aux guard, 
+                                    //       011-Video data,     001-Aux data,    000-Control,      010-Unused
 
   wire [11:0] H_VISIBLE;
   wire [11:0] H_FRONT_PORCH;
@@ -206,9 +204,9 @@ module hdmi_sequencer
   wire aux_end;
   wire aux_preamble;
   wire aux_guard;
-  reg [3:0]  aux_setup_count;
-  reg [5:0]  ctrl_requirement_count;
-  reg [2:0]  next_opmode;
+  reg [3:0]  aux_setup_count = GUARDBAND + PREAMBLE + 1;
+  reg [5:0]  ctrl_requirement_count = CTRL_EXTENDED - PREAMBLE;
+  reg [2:0]  next_opmode = 3'b000;
 
   assign next_pixel = (line_end) ? 12'd0 : pixel + 1;
   assign next_line = (frame_end) ? 12'd0 : line + line_end;
@@ -253,7 +251,7 @@ module hdmi_sequencer
       next_opmode = 3'b000;
 
   always @(posedge clk)
-    if (rst || next_frame_end || (aux_setup_end && aux_end))
+    if (next_frame_end || (aux_setup_end && aux_end))
       aux_setup_count <= GUARDBAND + PREAMBLE + 1;
     else if (aux_setup_count < GUARDBAND + PREAMBLE)
       aux_setup_count <= aux_setup_count + 1;
@@ -276,7 +274,7 @@ module hdmi_sequencer
 
 
   always @(posedge clk)
-    if (rst || next_frame_end)
+    if (next_frame_end)
     begin 
       pixel <= 12'd0;
       line <= 12'd0;

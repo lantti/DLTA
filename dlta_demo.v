@@ -24,12 +24,12 @@ THE SOFTWARE.
 //needed for the video generation. This code is mostly 
 //Spartan-3A specific, but might work as is also in some other
 //Xilinx devices
-module demo_demo (
+module dlta_demo (
   input  CLK,
-  input  SDA,
-  input  SCL,
+//  input  SDA,
+//  input  SCL,
   input  HPD_B,
-  input  CEC,
+//  input  CEC,
   output V_EN,
   output LEDPIX,
   output LEDBIT,
@@ -39,62 +39,18 @@ module demo_demo (
   output [3:0] TMDSB
 );
 
-  BUFG bufgentr (.I(CLK), .O(CLK_12M));
-
-  //DCM that generates Pixel clock
-  //Some typical pixel clock settings:
-  //(assuming input clock 12MHz)
-  //720p 74.4Mhz - MUL 31, DIV 5
-  //720p_reduced 64MHz - MUL 16, DIV 3
-  //1080p_24 63MHz - MUL 21, DIV 4
-  //XGA 65MHz - MUL 27, DIV 5
-  //SVGA 50MHz - MUL 25, DIV 6
-  //STANDARD VGA 25MHz - MUL 25, DIV 12
-/*
+  //DCM that generates pixel clock
   DCM_SP #(
-    .CLK_FEEDBACK ("NONE"),
-    .CLKFX_DIVIDE (13),
-    .CLKFX_MULTIPLY (5))
+    .CLK_FEEDBACK ("1X"))
   DCM_SP_PIXELCLK (
-    .CLKIN(CLK_12M),
-    .CLKFB(),
+    .CLKIN(CLK),
+    .CLKFB(pixel_clk),
     .RST(1'b0),
-    .PSEN(1'b0),
-    .PSINCDEC(1'b0),
-    .PSCLK(1'b0),
-    .DSSEN(1'b0),
-    .CLK0(),
-    .CLK90(),
-    .CLK180(),
-    .CLK270(),
-    .CLKDV(),
-    .CLK2X(),
-    .CLK2X180(),
-    .CLKFX(CLK_PIX),
-    .CLKFX180(),
-    .STATUS(),
-    .LOCKED(lockedPix),
-    .PSDONE());
-  
-  BUFG pclkbufg (.I(CLK_PIX), .O(pixel_clk));
-*/
-  wire lockedPix;
-  assign lockedPix = 1'b1;
-  BUFG pclkbufg (.I(CLK_12M), .O(pixel_clk));
+    .CLK0(clkx1),
+    .LOCKED(lockedPix));
 
-  reg [3:0] reset_delay = 4'b1111;
-  wire reset;
-  assign reset = reset_delay[0];
-  always @(posedge pixel_clk)
-    if (~lockedPix)
-      reset_delay <= 4'b1111;
-    else
-    begin
-      reset_delay[3] <= 1'b0;
-      reset_delay[2] <= reset_delay[3];
-      reset_delay[1] <= reset_delay[2];
-      reset_delay[0] <= reset_delay[1];
-    end
+  BUFG pclkbufg (.I(clkx1), .O(pixel_clk));
+
 
   //DCM that generates 5x or 10x pixel clock
   DCM_SP #(
@@ -103,17 +59,15 @@ module demo_demo (
     .CLKFX_MULTIPLY	(5))
   DCM_SP_BITCLK (
     .CLKIN(pixel_clk),
-    .RST(reset),
-    .PSEN(1'b0),
-    .PSINCDEC(1'b0),
-    .PSCLK(1'b0),
-    .DSSEN(1'b0),
+    .RST(1'b0),
     .CLKFX(clkx5p),
     .CLKFX180(clkx5n),
     .LOCKED(lockedBit));
 
+
   BUFG bclkbufgp (.I(clkx5p), .O(bit_clk));
   BUFG bclkbufgn (.I(clkx5n), .O(bit_clk_inv));
+
 
   wire [11:0] abs_pixel;
   wire [11:0] abs_line;
@@ -129,12 +83,17 @@ module demo_demo (
   wire [9:0]  token1;
   wire [9:0]  token2;
 
+  assign colour0 = 8'h80;
+  assign colour1 = 8'h80;
+  assign colour2 = 8'h80;
+  assign audio_left = 16'h0000;
+  assign audio_right = 16'h0000;
+
 
   hdmi_interface 
    #(.COLOUR_SCALING("NONE"))
   hdmi_front (
     .clk(pixel_clk),
-    .reset(reset), 
     .channel0_pixel(colour0),
     .channel1_pixel(colour1),
     .channel2_pixel(colour2),
@@ -159,7 +118,7 @@ module demo_demo (
     .line_end(line_end),
     .command_strobe(command_strobe),
     .command(command));
-*/
+
 
   sound_gen biibtsiki
    (.clk(pixel_clk),
@@ -177,7 +136,7 @@ module demo_demo (
     .Cb(colour0),
     .Y(colour1),
     .Cr(colour2));
-
+*/
 
   wire [2:0] tmds_data_even;
   wire [2:0] tmds_data_odd;
@@ -185,13 +144,12 @@ module demo_demo (
 
 //Use the true ddr serializer
   tmds_ddr_serializer serialise (
-    .clk (pixel_clk),
-    .clkx5p(bit_clk),
+//    .clk (bit_clk),
+    .clkx5(bit_clk),
     .clkx5n(bit_clk_inv),
     .chan0_token (~token0),
     .chan1_token (~token1),
     .chan2_token (~token2),
-    .rst (~lockedBit),
     .tmds_ddr_p (tmds_data_even),
     .tmds_ddr_n (tmds_data_odd));
 
@@ -285,50 +243,4 @@ module demo_demo (
   assign LEDBIT = ~lockedBit;
   assign LEDERROR = 1'b1;
   assign V_EN = 1'b1;
-endmodule
-
-module script
- (input  clk,
-  input line_end,
-  output reg command_strobe,
-  output [17:0] command);
-
-  reg [15:0] lines;
-
-(* rom_style = "block" *)
-  reg [35:0] script_mem [511:0];
-  reg [35:0] script_raw;
-  reg [8:0] script_addr;
-
-  assign command = script_raw[35:15];
-
-  initial
-    $readmemb("script.txt",script_mem);
-
-  always @(posedge clk)
-  begin
-    script_raw <= script_mem[script_addr];
-    if (line_end)
-    begin
-      if (|lines)
-      begin
-        lines <= lines - 1;
-        command_strobe <= 1'b0;
-        script_addr <= script_addr;
-      end
-      else
-      begin
-        lines <= script_raw[15:0];
-        command_strobe <= 1'b1;
-        script_addr <= script_addr + 1;
-      end
-    end
-    else
-    begin
-        lines <= lines;
-        command_strobe <= 1'b0;
-        script_addr <= script_addr;
-    end
-  end
-
 endmodule
