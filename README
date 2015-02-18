@@ -1,0 +1,15 @@
+A simple DVI/HDMI video signal generator for Xilinx Spartan-3A FPGA.
+The code might be usable on other devices as well, but it has
+only been tested on Spartan-3A. The maximum display resolution that
+can be achieved without violating Xilinx specified timing constraints
+is roughly around standard 720p.
+
+The source files included:
+dvi_demo.v        -   Top level for displaying simple moving test patterns (with assumed 12MHz input clock)
+video_timer.v     -   Logic for generating timing signals for the video field
+tmds_encoder.v    -   Encoder logic to generate the TMDS tokens required by the DVI and HDMI standards
+tmds_serializer.v -   Different tmds serializer modules to use. Each has slightly different speed and different resource requirements
+ring_buffer.v     -   Ring buffer mainly for the tmds serialization
+hdmi_aux_packer.v -   Logic for multiplexing and generating ECC codes for aux packets to be sent over the hdmi data islands
+aux_packets.v     -   Some sample aux packets that can be used to send audio data and infoframes over the hdmi data islands
+video_effects.v   -   Some logic to generate pixel data to test the system
