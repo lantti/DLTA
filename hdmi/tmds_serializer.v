@@ -101,12 +101,13 @@ endmodule
 //and the other carrying the odd bits syncronized to the clkx5
 //negative edges. To be used with a regular ddr buffer.
 module tmds_ddr_serializer (
-//  input          clk,         // bit clock input
   input          clkx5,      // bit clock input
   input          clkx5n,      // bit clock input inverted
   input [9:0]    chan0_token,
   input [9:0]    chan1_token,
   input [9:0]    chan2_token,
+  output reg load_p,
+  output reg load_n,
   output [2:0]   tmds_ddr_p,
   output [2:0]   tmds_ddr_n);
 
@@ -134,20 +135,16 @@ module tmds_ddr_serializer (
 //respectively.
   wire load_flag_p;
   wire load_flag_n;
-  reg [4:0] load_counter_p = 5'b01000;
-  reg [4:0] load_counter_n = 5'b01000;
+  reg [4:0] load_counter = 5'b01000;
+  reg load_counter_cross = 1'b0;
 
   always @(posedge clkx5)
-    load_counter_p <= {load_counter_p[0], load_counter_p[4:1]};
+    load_counter <= {load_counter[0], load_counter[4:1]};
   always @(posedge clkx5n)
-    load_counter_n <= {load_counter_n[0], load_counter_n[4:1]};
+    load_counter_cross <= load_counter[0];
 
-  assign load_flag_p = load_counter_p[0];
-  assign load_flag_n = load_counter_n[0];
-
-//  ring_buffer load_counter_p (.clk(clkx5p), .clear(1'b0), .load(rst_p), .p_in(5'b00100), .s_out(load_flag_p));
-//  ring_buffer load_counter_n (.clk(clkx5n), .clear(1'b0), .load(rst_n), .p_in(5'b00001), .s_out(load_flag_n));
-
+  assign load_flag_p = load_counter[0];
+  assign load_flag_n = load_counter_cross;
 
 //The serializer lines
   ring_buffer ser0p (.clk(clkx5), .clear(rst_p), .load(load_flag_p), .p_in(chan0_even), .s_out(tmds_ddr_p[0]));

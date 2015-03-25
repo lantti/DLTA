@@ -72,7 +72,7 @@ module hdmi_audio
   reg new_sample_header = 0; //Header bits for the audio sample packet entering the packet buffer next
   reg [1:0] new_sample_sub0 = 0; //Body bits for the audio sample packet entering the packet buffer next
 
-  assign parity = {^{sbrhiodd,sbrhieven,sbrloodd,sbrloeven}, ^{sblhiodd,sblhieven,sblloodd,sblloeven}};
+  assign parity = {^{sbrhiodd,sbrhieven,sbrloodd,sbrloeven,CSB[other_counter]}, ^{sblhiodd,sblhieven,sblloodd,sblloeven,CSB[other_counter]}};
 
   //Audio sample packet headers stay the same except for the B.0 bit that is set to 1 for every 192th packet
   always @(*)

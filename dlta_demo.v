@@ -31,22 +31,34 @@ module dlta_demo (
   input  HPD_B,
 //  input  CEC,
   output V_EN,
-  output LEDPIX,
+//  output LEDPIX,
   output LEDBIT,
-  output LEDALIVE,
+//  output LEDALIVE,
   output LEDERROR,
+  output [1:0] A,
+//  output [1:0] B,
+//  output CS_B,
+  output W_B,
+  output HOLD_B,
+  output MOSI,
+  output CCLK,
+  input MISO,
   output [3:0] TMDS,
   output [3:0] TMDSB
 );
 
   //DCM that generates pixel clock
-  DCM_SP #(
-    .CLK_FEEDBACK ("1X"))
+  DCM_SP 
+//    #(
+//    .CLK_FEEDBACK ("NONE"),
+//    .CLKFX_DIVIDE	(4),	
+//    .CLKFX_MULTIPLY	(4))
   DCM_SP_PIXELCLK (
     .CLKIN(CLK),
     .CLKFB(pixel_clk),
     .RST(1'b0),
     .CLK0(clkx1),
+//    .CLKFX(clkx1),
     .LOCKED(lockedPix));
 
   BUFG pclkbufg (.I(clkx1), .O(pixel_clk));
@@ -175,51 +187,6 @@ module dlta_demo (
     .Q(TMDSINT[2]));
 
 
-/*
-//Use the dual serializer with delaying ddr buffers
-  tmds_dual_serializer serialise (
-    .clk(pixel_clk),
-    .clkx5(bit_clk),
-    .rst(~lockedBit),
-    .chan0_token (token0),
-    .chan1_token (token1),
-    .chan2_token (token2),
-    .tmds_even (tmds_data_even),
-    .tmds_odd (tmds_data_odd));
-
-  ODDR2 #(.DDR_ALIGNMENT("C0")) ddr_reg0 (
-    .C0(bit_clk),
-    .C1(~bit_clk),
-    .D0(tmds_data_even[0]),
-    .D1(tmds_data_odd[0]),
-    .Q(TMDSINT[0]));
-
-  ODDR2 #(.DDR_ALIGNMENT("C0")) ddr_reg1 (
-    .C0(bit_clk),
-    .C1(~bit_clk),
-    .D0(tmds_data_even[1]),
-    .D1(tmds_data_odd[1]),
-    .Q(TMDSINT[1]));
-
-  ODDR2 #(.DDR_ALIGNMENT("C0")) ddr_reg2 (
-    .C0(bit_clk),
-    .C1(~bit_clk),
-    .D0(tmds_data_even[2]),
-    .D1(tmds_data_odd[2]),
-    .Q(TMDSINT[2]));
-*/
-
-/*
-//Use the simple serializer
-  tmds_serializer serialise (
-    .clk(pixel_clk),
-    .clkx10(bit_clk),
-    .rst(~lockedBit),
-    .chan0_token (token0),
-    .chan1_token (token1),
-    .chan2_token (token2),
-    .tmds_stream (TMDSINT[2:0]));
-*/
 
 //Mirror the pixel clock directly from the DCM into the
 //corresponding TMDS line. This is kind of a lazy approach
@@ -238,9 +205,41 @@ module dlta_demo (
   OBUFDS TMDS2 (.I(TMDSINT[2]), .O(TMDS[2]), .OB(TMDSB[2])) ;
   OBUFDS TMDS3 (.I(TMDSINT[3]), .O(TMDS[3]), .OB(TMDSB[3])) ;
 
-  assign LEDALIVE = HPD_B;
-  assign LEDPIX = ~lockedPix;
-  assign LEDBIT = ~lockedBit;
+
+  reg [29:0] boot_wait_count = 0;
+
+//  assign LEDALIVE = 1'b1; //boot_wait_count[24];
   assign LEDERROR = 1'b1;
+//  assign LEDPIX = 1'b1;
+  assign LEDBIT = 1'b1;
   assign V_EN = 1'b1;
+
+  assign CCLK = ~pixel_clk;
+  assign W_B = 1'b1;
+  assign HOLD_B = 1'b1;
+
+  always @(posedge pixel_clk)
+  begin
+    boot_wait_count <= boot_wait_count + 1;
+  end
+
+  wire [7:0] icap_d;
+
+  icap_flash icfl (
+    .clk(pixel_clk),
+    .trigger(boot_wait_count[27]),
+    .miso(MISO),
+    .cs_b(CS_B),
+    .mosi(MOSI),
+    .icap_clk(icap_clk),
+    .icap_d(icap_d),
+    .s0(A[0]),
+    .s1(A[1]));
+
+  ICAP_SPARTAN3A icap (
+    .CLK(icap_clk),
+    .CE(CS_B),
+    .I(icap_d),
+    .WRITE(1'b0));
+
 endmodule

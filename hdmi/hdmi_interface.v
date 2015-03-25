@@ -69,7 +69,8 @@ module hdmi_interface
   wire [3:0] channel1_aux;
   wire [3:0] channel2_aux;
 
-  hdmi_sequencer #(.VIDEO_MODE("720p_reduced")) vtimer (
+  hdmi_sequencer #(.VIDEO_MODE("720p_reduced")) 
+  vtimer (
     .clk(clk),
     .aux_request(aux_request),
     .aux_enable(ae),
