@@ -111,12 +111,19 @@ module video_controller
   assign next_spritepx = (spritedirx) ? spritepx + 1 : spritepx - 1;
   assign next_spriteln = (spritediry) ? spriteln + 1 : spriteln - 1;
 
+  wire [7:0] backY;
+  wire [7:0] backCb;
+  wire [7:0] backCr;
+
+  assign backY = (sprite_valid) ? sprite_Y : grids_c1;
+  assign backCb = (sprite_valid) ? sprite_Cb : grids_c0;
+  assign backCr = (sprite_valid) ? sprite_Cr : grids_c2;
 
   always @(*)
   begin
-    Y =  (|txtq) ? txtq<<5 : (sprite_valid) ? sprite_Y : grids_c1;
-    Cb = (|txtq) ? 8'h80 : (sprite_valid) ? sprite_Cb : grids_c0;
-    Cr = (|txtq) ? 8'h80 : (sprite_valid) ? sprite_Cr : grids_c2;
+    Y =  (|txtq) ? (txtq<<5 | backY) : backY;
+    Cb = (|txtq) ? (backCb>>1) | 8'h80 : backCb;
+    Cr = (|txtq) ? backCr>>1 : backCr;
   end
 
 

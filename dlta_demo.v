@@ -124,10 +124,12 @@ module dlta_demo (
     .channel2_token(token2));
 
 
+  wire [3:0] control;
 
   sound_gen biibtsiki
    (.clk(pixel_clk),
     .sample_strobe(audio_strobe),
+    .control(control),
     .left_sample(audio_left),
     .right_sample(audio_right));
 
@@ -207,10 +209,16 @@ module dlta_demo (
   end
 
 
-  assign LEDALIVE = HPD_B;
-  assign LEDPIX = load_trigger;
-  assign LEDBIT = load_addr[0];
+//  assign LEDALIVE = HPD_B;
+//  assign LEDPIX = load_trigger;
+//  assign LEDBIT = load_addr[0];
   assign V_EN = 1'b1;
+
+  assign LEDALIVE = control[0];
+  assign LEDPIX = control[1];
+  assign LEDBIT = control[2];
+  assign LEDERROR = control[3];
+
 
   assign CCLK = ~pixel_clk;
   assign W_B = 1'b1;
@@ -231,7 +239,7 @@ module dlta_demo (
     .icap_clk(icap_clk),
     .icap_d(icap_d));
 
-  assign LEDERROR = ~halt;
+ // assign LEDERROR = ~halt;
 
   ICAP_SPARTAN3A icap (
     .CLK(icap_clk),
