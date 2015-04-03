@@ -23,49 +23,41 @@ THE SOFTWARE.
 module icap_flash (
   input clk,
   input trigger,
+  input [23:0] addr,
+  input [23:0] len,
   input miso,
   output cs_b,
   output mosi,
   output icap_clk,
-  output reg [7:0] icap_d,
-  output s0,
-  output s1);
+  output reg running,
+  output reg [7:0] icap_d);
 
-  reg [31:0] read_cmd = 32'h0B00E000;
+  reg [31:0] read_cmd = 32'h0B000000;
+  reg [23:0] len_count;
   reg [7:0] icap_clk_gen = 8'b11110000;
   reg [7:0] d;
   reg cs = 0;
-  reg int_trig = 0;
-
-  reg check0;
-  reg check1;
+//  reg running = 0;
 
   assign mosi = read_cmd[31];
   assign cs_b = ~cs;
-
-
   assign icap_clk = icap_clk_gen[7];
   assign sync = ~icap_clk_gen[0] & icap_clk_gen[1];
   assign byte_boundary = ~icap_clk_gen[7] & icap_clk_gen[0];
-
-
-  assign s0 = d[7];
-  assign s1 = byte_boundary;
+  assign stop = ~|len_count;
 
   always @(posedge clk)
   begin
-    int_trig <= int_trig | trigger;
+    running <= ((running && !stop) || trigger);
+    read_cmd <= (trigger) ? {8'h0B,addr} : read_cmd;
+    len_count <= (trigger) ? len : (byte_boundary) ? len_count - 1 : len_count;
     d <= {miso, d[7:1]};
     icap_clk_gen <= {icap_clk_gen[0], icap_clk_gen[7:1]};
-    cs <= cs | (int_trig & sync); 
+    cs <= (!stop && (cs || (running && sync))); 
     if (cs)
       read_cmd <= {read_cmd[30:0],1'b0};  
     if (byte_boundary)
       icap_d <= d;
   end
-
-//      check0 <= (icap_d == 8'b01010101);
-//      check1 <= check0 & (icap_d == 8'b10011001);
-
 endmodule
 

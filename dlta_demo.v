@@ -31,13 +31,13 @@ module dlta_demo (
   input  HPD_B,
 //  input  CEC,
   output V_EN,
-//  output LEDPIX,
+  output LEDPIX,
   output LEDBIT,
-//  output LEDALIVE,
+  output LEDALIVE,
   output LEDERROR,
-  output [1:0] A,
+//  output [1:0] A,
 //  output [1:0] B,
-//  output CS_B,
+  output CS_B,
   output W_B,
   output HOLD_B,
   output MOSI,
@@ -47,6 +47,8 @@ module dlta_demo (
   output [3:0] TMDSB
 );
 
+  BUFG iclkbufg (.I(CLK), .O(input_clk));
+
   //DCM that generates pixel clock
   DCM_SP 
 //    #(
@@ -54,7 +56,7 @@ module dlta_demo (
 //    .CLKFX_DIVIDE	(4),	
 //    .CLKFX_MULTIPLY	(4))
   DCM_SP_PIXELCLK (
-    .CLKIN(CLK),
+    .CLKIN(input_clk),
     .CLKFB(pixel_clk),
     .RST(1'b0),
     .CLK0(clkx1),
@@ -70,7 +72,7 @@ module dlta_demo (
     .CLKFX_DIVIDE	(1),	
     .CLKFX_MULTIPLY	(5))
   DCM_SP_BITCLK (
-    .CLKIN(pixel_clk),
+    .CLKIN(input_clk),
     .RST(1'b0),
     .CLKFX(clkx5p),
     .CLKFX180(clkx5n),
@@ -95,11 +97,11 @@ module dlta_demo (
   wire [9:0]  token1;
   wire [9:0]  token2;
 
-  assign colour0 = 8'h80;
-  assign colour1 = 8'h80;
-  assign colour2 = 8'h80;
-  assign audio_left = 16'h0000;
-  assign audio_right = 16'h0000;
+//  assign colour0 = 8'h80;
+//  assign colour1 = 8'h80;
+//  assign colour2 = 8'h80;
+//  assign audio_left = 16'h0000;
+//  assign audio_right = 16'h0000;
 
 
   hdmi_interface 
@@ -122,15 +124,6 @@ module dlta_demo (
     .channel2_token(token2));
 
 
-/*
-  wire command_strobe;
-  wire [17:0] command;
-  script scrpt
-   (.clk(pixel_clk),
-    .line_end(line_end),
-    .command_strobe(command_strobe),
-    .command(command));
-
 
   sound_gen biibtsiki
    (.clk(pixel_clk),
@@ -138,17 +131,19 @@ module dlta_demo (
     .left_sample(audio_left),
     .right_sample(audio_right));
 
-
+  wire halt;
   video_controller vc
    (.clk(pixel_clk),
+    .halt(halt),
     .pixel(abs_pixel),
     .line(abs_line),
     .line_end(line_end),
     .frame_end(frame_end),
+    .reconf(load_trigger),
     .Cb(colour0),
     .Y(colour1),
     .Cr(colour2));
-*/
+
 
   wire [2:0] tmds_data_even;
   wire [2:0] tmds_data_odd;
@@ -156,7 +151,6 @@ module dlta_demo (
 
 //Use the true ddr serializer
   tmds_ddr_serializer serialise (
-//    .clk (bit_clk),
     .clkx5(bit_clk),
     .clkx5n(bit_clk_inv),
     .chan0_token (~token0),
@@ -205,41 +199,43 @@ module dlta_demo (
   OBUFDS TMDS2 (.I(TMDSINT[2]), .O(TMDS[2]), .OB(TMDSB[2])) ;
   OBUFDS TMDS3 (.I(TMDSINT[3]), .O(TMDS[3]), .OB(TMDSB[3])) ;
 
+  reg [1:0] load_addr;
 
-  reg [29:0] boot_wait_count = 0;
+  always @(posedge pixel_clk)
+  begin
+    load_addr <= load_addr + load_trigger;
+  end
 
-//  assign LEDALIVE = 1'b1; //boot_wait_count[24];
-  assign LEDERROR = 1'b1;
-//  assign LEDPIX = 1'b1;
-  assign LEDBIT = 1'b1;
+
+  assign LEDALIVE = HPD_B;
+  assign LEDPIX = load_trigger;
+  assign LEDBIT = load_addr[0];
   assign V_EN = 1'b1;
 
   assign CCLK = ~pixel_clk;
   assign W_B = 1'b1;
   assign HOLD_B = 1'b1;
 
-  always @(posedge pixel_clk)
-  begin
-    boot_wait_count <= boot_wait_count + 1;
-  end
 
   wire [7:0] icap_d;
 
   icap_flash icfl (
     .clk(pixel_clk),
-    .trigger(boot_wait_count[27]),
+    .trigger(load_trigger),
+    .addr({6'h00,load_addr,16'hE000}),
+    .len(24'h002d36),
     .miso(MISO),
     .cs_b(CS_B),
     .mosi(MOSI),
+    .running(halt),
     .icap_clk(icap_clk),
-    .icap_d(icap_d),
-    .s0(A[0]),
-    .s1(A[1]));
+    .icap_d(icap_d));
+
+  assign LEDERROR = ~halt;
 
   ICAP_SPARTAN3A icap (
     .CLK(icap_clk),
     .CE(CS_B),
     .I(icap_d),
     .WRITE(1'b0));
-
 endmodule
