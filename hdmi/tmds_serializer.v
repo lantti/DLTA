@@ -106,8 +106,6 @@ module tmds_ddr_serializer (
   input [9:0]    chan0_token,
   input [9:0]    chan1_token,
   input [9:0]    chan2_token,
-  output reg load_p,
-  output reg load_n,
   output [2:0]   tmds_ddr_p,
   output [2:0]   tmds_ddr_n);
 
@@ -147,12 +145,12 @@ module tmds_ddr_serializer (
   assign load_flag_n = load_counter_cross;
 
 //The serializer lines
-  ring_buffer ser0p (.clk(clkx5), .clear(rst_p), .load(load_flag_p), .p_in(chan0_even), .s_out(tmds_ddr_p[0]));
-  ring_buffer ser0n (.clk(clkx5n), .clear(rst_n), .load(load_flag_n), .p_in(chan0_odd), .s_out(tmds_ddr_n[0]));
+  ring_buffer ser0p (.clk(clkx5), .clear(1'b0), .load(load_flag_p), .p_in(chan0_even), .s_out(tmds_ddr_p[0]));
+  ring_buffer ser0n (.clk(clkx5n), .clear(1'b0), .load(load_flag_n), .p_in(chan0_odd), .s_out(tmds_ddr_n[0]));
 
-  ring_buffer ser1p (.clk(clkx5), .clear(rst_p), .load(load_flag_p), .p_in(chan1_even), .s_out(tmds_ddr_p[1]));
-  ring_buffer ser1n (.clk(clkx5n), .clear(rst_n), .load(load_flag_n), .p_in(chan1_odd), .s_out(tmds_ddr_n[1]));
+  ring_buffer ser1p (.clk(clkx5), .clear(1'b0), .load(load_flag_p), .p_in(chan1_even), .s_out(tmds_ddr_p[1]));
+  ring_buffer ser1n (.clk(clkx5n), .clear(1'b0), .load(load_flag_n), .p_in(chan1_odd), .s_out(tmds_ddr_n[1]));
 
-  ring_buffer ser2p (.clk(clkx5), .clear(rst_p), .load(load_flag_p), .p_in(chan2_even), .s_out(tmds_ddr_p[2]));
-  ring_buffer ser2n (.clk(clkx5n), .clear(rst_n), .load(load_flag_n), .p_in(chan2_odd), .s_out(tmds_ddr_n[2]));
+  ring_buffer ser2p (.clk(clkx5), .clear(1'b0), .load(load_flag_p), .p_in(chan2_even), .s_out(tmds_ddr_p[2]));
+  ring_buffer ser2n (.clk(clkx5n), .clear(1'b0), .load(load_flag_n), .p_in(chan2_odd), .s_out(tmds_ddr_n[2]));
 endmodule

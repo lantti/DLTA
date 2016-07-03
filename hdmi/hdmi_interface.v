@@ -21,7 +21,8 @@ THE SOFTWARE.
 */
 
 module hdmi_interface
-#(parameter COLOUR_SCALING = "NONE")
+#(parameter VIDEO_MODE = "STANDARD_VGA",
+  parameter COLOUR_SCALING = "NONE")
 
  (input clk,
   input [7:0] channel0_pixel,
@@ -29,6 +30,7 @@ module hdmi_interface
   input [7:0] channel2_pixel,
   input [15:0] audio_sample_left,
   input [15:0] audio_sample_right,
+  input dvi,
   output de,
   output [11:0] pixel,
   output [11:0] line,
@@ -69,7 +71,7 @@ module hdmi_interface
   wire [3:0] channel1_aux;
   wire [3:0] channel2_aux;
 
-  hdmi_sequencer #(.VIDEO_MODE("720p_reduced")) 
+  hdmi_sequencer #(.VIDEO_MODE(VIDEO_MODE)) 
   vtimer (
     .clk(clk),
     .aux_request(aux_request),
@@ -232,8 +234,8 @@ module hdmi_interface
     hsync_delayed <= hsync_reg;
     hdmi_mode_delayed <= hdmi_mode;
 
-    case (hdmi_mode_delayed)
-      3'b111: //111-Video preamble
+    case ({hdmi_mode_delayed,dvi})
+      4'b1110: //111-Video preamble
       begin
         channel0_mode <= 2'b10; 
         channel1_mode <= 2'b10;
@@ -242,7 +244,7 @@ module hdmi_interface
         channel2_ctrl <= 2'b00;
         channel2_guard <= 1'b0;
       end
-      3'b110: //110-Video guard
+      4'b1100: //110-Video guard
       begin
         channel0_mode <= 2'b00;
         channel1_mode <= 2'b00;
@@ -251,7 +253,7 @@ module hdmi_interface
         channel2_ctrl <= 2'b00;
         channel2_guard <= 1'b1;
       end
-      3'b101: //101-Aux preamble
+      4'b1010: //101-Aux preamble
       begin
         channel0_mode <= 2'b10;
         channel1_mode <= 2'b10;
@@ -260,7 +262,7 @@ module hdmi_interface
         channel2_ctrl <= 2'b01;
         channel2_guard <= 1'b0;
       end
-      3'b100: //100-Aux guard
+      4'b1000: //100-Aux guard
       begin
         channel0_mode <= 2'b01;
         channel1_mode <= 2'b00;
@@ -269,7 +271,7 @@ module hdmi_interface
         channel2_ctrl <= 2'b00;
         channel2_guard <= 1'b0;
       end
-      3'b011: //011-Video data
+      4'b0110, 4'b0111: //011-Video data
       begin
         channel0_mode <= 2'b11;
         channel1_mode <= 2'b11;
@@ -278,7 +280,7 @@ module hdmi_interface
         channel2_ctrl <= 2'b00;
         channel2_guard <= 1'b0;
       end
-      3'b001: //001-Aux data
+      4'b0010: //001-Aux data
       begin
         channel0_mode <= 2'b01;
         channel1_mode <= 2'b01;
