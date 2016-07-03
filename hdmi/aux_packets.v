@@ -211,7 +211,72 @@ module hdmi_audio
     .sub3_in(2'b00));
 endmodule
 
+module avi_infoframe_720p
+ (input clk,
+  input [4:0] slot,
+  input trigger,
+  input enable,
+  input ae,
+  output ready,
+  output header,
+  output [1:0] sub0,
+  output [1:0] sub1,
+  output [1:0] sub2,
+  output [1:0] sub3);
 
+  fixed_aux_packet 
+  #(.HEADER(32'h00_0D_02_82),
+    .SP0(64'h00_00_00_04_80_08_40_A3),
+    .SP1(64'h00_00_00_00_00_00_00_00),
+    .SP2(64'h00_00_00_00_00_00_00_00),
+    .SP3(64'h00_00_00_00_00_00_00_00))
+  avi_info_720p
+   (.clk(clk),
+    .trigger(trigger),
+    .enable(enable),
+    .ae(ae),
+    .slot(slot),
+    .ready(ready),
+    .header(header),
+    .sub0(sub0),
+    .sub1(sub1),
+    .sub2(sub2),
+    .sub3(sub3));
+endmodule
+
+
+module audio_infoframe_16bit_32kHz
+ (input clk,
+  input [4:0] slot,
+  input trigger,
+  input enable,
+  input ae,
+  output ready,
+  output header,
+  output [1:0] sub0,
+  output [1:0] sub1,
+  output [1:0] sub2,
+  output [1:0] sub3);
+
+  fixed_aux_packet 
+  #(.HEADER(32'h00_0A_01_84),
+    .SP0(64'h00_00_00_00_00_00_01_70),
+    .SP1(64'h00_00_00_00_00_00_00_00),
+    .SP2(64'h00_00_00_00_00_00_00_00),
+    .SP3(64'h00_00_00_00_00_00_00_00))
+  audio_info_16_32
+   (.clk(clk),
+    .trigger(trigger),
+    .enable(enable),
+    .ae(ae),
+    .slot(slot),
+    .ready(ready),
+    .header(header),
+    .sub0(sub0),
+    .sub1(sub1),
+    .sub2(sub2),
+    .sub3(sub3));
+endmodule
 
 //A module to contain a fixed aux packet.
 module fixed_aux_packet

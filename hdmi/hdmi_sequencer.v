@@ -98,6 +98,32 @@ module hdmi_sequencer
         assign V_BACK_PORCH    = 23;
         assign V_SYNC_POLARITY = 1;
       end
+      "480p" :
+      begin
+        assign H_VISIBLE       = 720;
+        assign H_FRONT_PORCH   = 16;
+        assign H_SYNC          = 62;
+        assign H_BACK_PORCH    = 60;
+        assign H_SYNC_POLARITY = 0;
+        assign V_VISIBLE       = 480;
+        assign V_FRONT_PORCH   = 9;
+        assign V_SYNC          = 6;
+        assign V_BACK_PORCH    = 30;
+        assign V_SYNC_POLARITY = 0;
+      end
+      "576p" :
+      begin
+        assign H_VISIBLE       = 720;
+        assign H_FRONT_PORCH   = 12;
+        assign H_SYNC          = 64;
+        assign H_BACK_PORCH    = 68;
+        assign H_SYNC_POLARITY = 0;
+        assign V_VISIBLE       = 576;
+        assign V_FRONT_PORCH   = 5;
+        assign V_SYNC          = 5;
+        assign V_BACK_PORCH    = 39;
+        assign V_SYNC_POLARITY = 0;
+      end
       "720p" :
       begin
         assign H_VISIBLE       = 1280;

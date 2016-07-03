@@ -91,13 +91,7 @@ module hdmi_interface
   wire [1:0] avi_info_sub1;  
   wire [1:0] avi_info_sub2;
   wire [1:0] avi_info_sub3;
-  fixed_aux_packet 
-  #(.HEADER(32'h00_0D_02_82),
-    .SP0(64'h00_00_00_04_80_08_40_A3),
-    .SP1(64'h00_00_00_00_00_00_00_00),
-    .SP2(64'h00_00_00_00_00_00_00_00),
-    .SP3(64'h00_00_00_00_00_00_00_00))
-  avi_infoframe
+  avi_infoframe_720p avi_infoframe
    (.clk(clk),
     .trigger(frame_end),
     .enable(avi_info_enable),
@@ -115,13 +109,7 @@ module hdmi_interface
   wire [1:0] audio_info_sub1;
   wire [1:0] audio_info_sub2;
   wire [1:0] audio_info_sub3;
-  fixed_aux_packet 
-  #(.HEADER(32'h00_0A_01_84),
-    .SP0(64'h00_00_00_00_00_00_01_70),
-    .SP1(64'h00_00_00_00_00_00_00_00),
-    .SP2(64'h00_00_00_00_00_00_00_00),
-    .SP3(64'h00_00_00_00_00_00_00_00))
-  audio_infoframe
+  audio_infoframe_16bit_32kHz audio_infoframe
    (.clk(clk),
     .trigger(frame_end),
     .enable(audio_info_enable),
